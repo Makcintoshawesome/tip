@@ -1,0 +1,2 @@
+# tip
+smart ai tips
