@@ -1,9 +1,0 @@
-{
-  "/_app": "pages/_app.js",
-  "/_error": "pages/_error.js",
-  "/_document": "pages/_document.js",
-  "/": "pages/index.js",
-  "/api/admin/prompts": "pages/api/admin/prompts.js",
-  "/admin": "pages/admin.js",
-  "/api/generate-tip": "pages/api/generate-tip.js"
-}

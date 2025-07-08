@@ -1,132 +1,166 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import { getCategories, setCategories } from '../mockPromptStore';
 
-const ADMIN_PASSWORD = 'admin123'; // Simple hardcoded password for demo
+import LogoutIcon from '@mui/icons-material/Logout';
+import SaveIcon from '@mui/icons-material/Save';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
 
 export default function Admin() {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
-  const [prompts, setPrompts] = useState({
-    general: '',
-    productivity: '',
-    mindset: '',
-    business: '',
-  });
-  const [message, setMessage] = useState('');
+  const router = useRouter();
+  const [prompt, setPrompt] = useState('');
+  const [categories, setLocalCategories] = useState([]);
+  const [newCategory, setNewCategory] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  async function fetchPrompts() {
-    const res = await fetch('/api/admin/prompts');
-    if (res.ok) {
-      const data = await res.json();
-      setPrompts(data);
-    }
-  }
-
-  async function updatePrompts(e) {
-    e.preventDefault();
-    const res = await fetch('/api/admin/prompts', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer admin123'
-      },
-      body: JSON.stringify(prompts),
-    });
-    if (res.ok) {
-      setMessage('Prompts updated successfully.');
+  useEffect(() => {
+    const auth = localStorage.getItem('auth');
+    if (!auth) {
+      router.push('/login');
     } else {
-      setMessage('Failed to update prompts.');
+      fetchPromptAndCategories();
+    }
+  }, []);
+
+  async function fetchPromptAndCategories() {
+    setLoading(true);
+    try {
+      const promptResponse = await fetch('/api/admin-prompt');
+      if (!promptResponse.ok) throw new Error('Failed to fetch prompt');
+      const promptData = await promptResponse.json();
+      setPrompt(promptData.prompt);
+      setLocalCategories(getCategories());
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setLoading(false);
     }
   }
 
-  function handleLogin(e) {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      setAuthenticated(true);
-      fetchPrompts();
-    } else {
-      alert('Incorrect password');
+  async function savePrompt() {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/admin-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      });
+      if (!response.ok) throw new Error('Failed to save prompt');
+      alert('Prompt saved!');
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setLoading(false);
     }
   }
 
-  if (!authenticated) {
-    return (
-      <div style={styles.container}>
-        <h1>Admin Login</h1>
-        <form onSubmit={handleLogin}>
-          <input
-            type="password"
-            placeholder="Enter password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={styles.input}
-          />
-          <button type="submit" style={styles.button}>Login</button>
-        </form>
-      </div>
-    );
+  function addCategory() {
+    if (newCategory.trim() && !categories.includes(newCategory.trim())) {
+      const updatedCategories = [...categories, newCategory.trim()];
+      setLocalCategories(updatedCategories);
+      setCategories(updatedCategories);
+      setNewCategory('');
+    }
+  }
+
+  function removeCategory(cat) {
+    const updatedCategories = categories.filter(c => c !== cat);
+    setLocalCategories(updatedCategories);
+    setCategories(updatedCategories);
+  }
+
+  function logout() {
+    localStorage.removeItem('auth');
+    router.push('/login');
   }
 
   return (
-    <div style={styles.container}>
-      <h1>Admin Prompt Configuration</h1>
-      <form onSubmit={updatePrompts} style={styles.form}>
-        {Object.entries(prompts).map(([category, prompt]) => (
-          <div key={category} style={styles.field}>
-            <label style={styles.label}>{category.charAt(0).toUpperCase() + category.slice(1)} Prompt:</label>
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompts({ ...prompts, [category]: e.target.value })}
-              rows={3}
-              style={styles.textarea}
-            />
+    <div className="container-fluid">
+      <div className="row min-vh-100">
+        {/* Sidebar */}
+        <div className="col-md-3 bg-dark text-white p-4 shadow-sm">
+          <h4 className="text-success mb-4">Admin Dashboard</h4>
+          <ul className="nav flex-column">
+            <li className="nav-item mb-2">
+              <button className="btn btn-outline-success w-100" onClick={logout}>
+                <LogoutIcon className="me-2" />
+                Logout
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        {/* Main Content */}
+        <div className="col-md-9 p-5">
+          <h2 className="text-success mb-4">Manage Prompt & Categories</h2>
+
+          {/* Prompt Card */}
+          <div className="card mb-4 shadow-sm">
+            <div className="card-header bg-success text-white">
+              <strong>Edit Prompt</strong>
+            </div>
+            <div className="card-body">
+              <textarea
+                className="form-control bg-light"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                disabled={loading}
+                rows={6}
+              />
+              <button
+                className="btn btn-success mt-3"
+                onClick={savePrompt}
+                disabled={loading}
+              >
+                <SaveIcon className="me-2" />
+                Save Prompt
+              </button>
+            </div>
           </div>
-        ))}
-        <button type="submit" style={styles.button}>Save Prompts</button>
-      </form>
-      {message && <p>{message}</p>}
+
+          {/* Categories Card */}
+          <div className="card shadow-sm">
+            <div className="card-header bg-success text-white">
+              <strong>Manage Categories</strong>
+            </div>
+            <div className="card-body">
+              <ul className="list-group mb-3">
+                {categories.map((cat) => (
+                  <li key={cat} className="list-group-item d-flex justify-content-between align-items-center">
+                    {cat}
+                    <button
+                      className="btn btn-sm btn-danger"
+                      onClick={() => removeCategory(cat)}
+                      disabled={loading}
+                    >
+                      <DeleteIcon />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="input-group">
+                <input
+                  type="text"
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  placeholder="New category"
+                  className="form-control"
+                  disabled={loading}
+                />
+                <button
+                  className="btn btn-success"
+                  onClick={addCategory}
+                  disabled={loading || !newCategory.trim()}
+                >
+                  <AddIcon />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    maxWidth: 600,
-    margin: '2rem auto',
-    padding: '1rem',
-    fontFamily: 'Arial, sans-serif',
-  },
-  input: {
-    fontSize: '1rem',
-    padding: '0.5rem',
-    marginBottom: '1rem',
-    width: '100%',
-    boxSizing: 'border-box',
-  },
-  button: {
-    fontSize: '1rem',
-    padding: '0.75rem 1.5rem',
-    cursor: 'pointer',
-    borderRadius: '4px',
-    border: 'none',
-    backgroundColor: '#0070f3',
-    color: 'white',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '1rem',
-  },
-  field: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  label: {
-    fontWeight: 'bold',
-    marginBottom: '0.25rem',
-  },
-  textarea: {
-    fontSize: '1rem',
-    padding: '0.5rem',
-    resize: 'vertical',
-  },
-};
