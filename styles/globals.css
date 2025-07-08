@@ -28,30 +28,51 @@ select.form-select-sm {
   margin-left: -15px;
 }
 /* === Animated SVG Styles === */
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
-
-@keyframes rotate {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
+/* SVG Animation Styles */
 .svg-bounce {
-  animation: bounce 2.5s infinite ease-in-out;
+  animation: bounce 2s infinite ease-in-out;
 }
 
 .svg-pulse {
-  animation: pulse 3s infinite ease-in-out;
+  animation: pulse 2s infinite ease-in-out;
 }
 
 .svg-rotate {
-  animation: rotate 6s linear infinite;
+  animation: rotate 4s linear infinite;
+}
+
+/* Bounce Animation */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* Pulse Animation */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Rotate Animation */
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
