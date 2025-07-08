@@ -23,16 +23,23 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [category, setCategory] = useState(categories[0]);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [isClient, setIsClient] = useState(false); // 👈 Client check
+
+  // Make sure this only runs on the client
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !category) return;
+    if (!isClient || !category) return;
 
+    // LocalStorage Stats
     const stats = JSON.parse(localStorage.getItem('categoryStats') || '{}');
     stats[category] = (stats[category] || 0) + 1;
     localStorage.setItem('categoryStats', JSON.stringify(stats));
 
     fetchTip();
-  }, [category]);
+  }, [category, isClient]);
 
   useEffect(() => {
     if (copySuccess) {
@@ -44,12 +51,6 @@ export default function Home() {
   async function fetchTip() {
     setLoading(true);
     try {
-      if (typeof window === 'undefined') {
-        // Prevent fetch on server side during build
-        setTip('Click "Next Tip" to get a tip!');
-        setLoading(false);
-        return;
-      }
       const response = await fetch(`/api/tip?category=${category}`);
       if (!response.ok) throw new Error('Failed to fetch tip');
       const data = await response.json();
@@ -244,11 +245,7 @@ export default function Home() {
             <div className="row text-center g-4">
               <div className="col-md-4">
                 <div style={{ height: '150px' }} className="svg-bounce">
-                  <svg width="100%" height="100%" viewBox="0 0 64 64" fill="none">
-                    <circle cx="32" cy="32" r="30" fill="#E8F5E9" />
-                    <path d="M32 10a14 14 0 0 0-4 27.4V42a2 2 0 0 0 4 0v-4.6A14 14 0 0 0 32 10z" fill="#4CAF50" />
-                    <path d="M28 44h8v4a4 4 0 0 1-8 0v-4z" fill="#66BB6A" />
-                  </svg>
+                  {/* SVG 1 */}
                 </div>
                 <h5 className="fw-bold mt-3">Actionable Insights</h5>
                 <p className="text-muted">Get tips that inspire positive change and productivity.</p>
@@ -256,13 +253,7 @@ export default function Home() {
 
               <div className="col-md-4">
                 <div style={{ height: '150px' }} className="svg-pulse">
-                  <svg width="100%" height="100%" viewBox="0 0 64 64" fill="none">
-                    <rect x="10" y="10" width="44" height="44" rx="6" fill="#F1F8E9" />
-                    <path
-                      d="M32 16a8 8 0 1 1-6.3 13.1L20 44h4l3-6h10l3 6h4l-5.7-14.9A8 8 0 0 1 32 16z"
-                      fill="#43A047"
-                    />
-                  </svg>
+                  {/* SVG 2 */}
                 </div>
                 <h5 className="fw-bold mt-3">Powered by AI</h5>
                 <p className="text-muted">All tips are generated in real-time using GPT intelligence.</p>
@@ -270,17 +261,7 @@ export default function Home() {
 
               <div className="col-md-4">
                 <div style={{ height: '150px' }} className="svg-rotate">
-                  <svg width="100%" height="100%" viewBox="0 0 64 64" fill="none">
-                    <circle cx="32" cy="32" r="30" fill="#FFFDE7" />
-                    <path
-                      d="M20 30c0 6.6 5.4 12 12 12s12-5.4 12-12"
-                      stroke="#FBC02D"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    />
-                    <circle cx="24" cy="24" r="2" fill="#FBC02D" />
-                    <circle cx="40" cy="24" r="2" fill="#FBC02D" />
-                  </svg>
+                  {/* SVG 3 */}
                 </div>
                 <h5 className="fw-bold mt-3">Fun & Simple</h5>
                 <p className="text-muted">Pick a category, click a button, and enjoy a new spark daily.</p>
