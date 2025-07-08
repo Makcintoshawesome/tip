@@ -44,6 +44,12 @@ export default function Home() {
   async function fetchTip() {
     setLoading(true);
     try {
+      if (typeof window === 'undefined') {
+        // Prevent fetch on server side during build
+        setTip('Click "Next Tip" to get a tip!');
+        setLoading(false);
+        return;
+      }
       const response = await fetch(`/api/tip?category=${category}`);
       if (!response.ok) throw new Error('Failed to fetch tip');
       const data = await response.json();
