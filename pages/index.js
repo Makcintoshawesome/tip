@@ -1,3 +1,5 @@
+'use client'; // Ensure this is treated as a client component in Next.js 13+
+
 import { useState, useEffect } from 'react';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import LoginIcon from '@mui/icons-material/Login';
@@ -18,15 +20,19 @@ const categories = [
   'focus',
 ];
 
+const defaultTip = 'Click "Next Tip" to get a tip!';
+const errorTip = 'Error fetching tip. Please try again.';
+
 export default function Home() {
-  const [tip, setTip] = useState('Click "Next Tip" to get a tip!');
+  const [tip, setTip] = useState(defaultTip);
   const [loading, setLoading] = useState(false);
   const [category, setCategory] = useState(categories[0]);
   const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !category) return;
+    if (typeof window === 'undefined') return;
 
+    // Update category usage stats in localStorage
     const stats = JSON.parse(localStorage.getItem('categoryStats') || '{}');
     stats[category] = (stats[category] || 0) + 1;
     localStorage.setItem('categoryStats', JSON.stringify(stats));
@@ -35,58 +41,44 @@ export default function Home() {
   }, [category]);
 
   useEffect(() => {
-    if (copySuccess) {
-      const timer = setTimeout(() => setCopySuccess(false), 3000);
-      return () => clearTimeout(timer);
-    }
+    if (!copySuccess) return;
+
+    const timer = setTimeout(() => setCopySuccess(false), 3000);
+    return () => clearTimeout(timer);
   }, [copySuccess]);
 
   async function fetchTip() {
+    if (typeof window === 'undefined') return;
+
     setLoading(true);
     try {
-      if (typeof window === 'undefined') {
-        // Prevent fetch on server side during build
-        setTip('Click "Next Tip" to get a tip!');
-        setLoading(false);
-        return;
-      }
       const response = await fetch(`/api/tip?category=${category}`);
-      if (!response.ok) throw new Error('Failed to fetch tip');
+      if (!response.ok) throw new Error();
       const data = await response.json();
-      setTip(data.tip);
-    } catch (error) {
-      setTip('Error fetching tip. Please try again.');
+      setTip(data.tip || defaultTip);
+    } catch {
+      setTip(errorTip);
     } finally {
       setLoading(false);
     }
   }
 
   function copyTip() {
-    if (
-      tip &&
-      tip !== 'Click "Next Tip" to get a tip!' &&
-      tip !== 'Error fetching tip. Please try again.'
-    ) {
+    if (tip && tip !== defaultTip && tip !== errorTip) {
       navigator.clipboard.writeText(tip);
       setCopySuccess(true);
     }
   }
 
   function shareTip() {
-    if (
-      navigator.share &&
-      tip &&
-      tip !== 'Click "Next Tip" to get a tip!' &&
-      tip !== 'Error fetching tip. Please try again.'
-    ) {
-      navigator
-        .share({ title: 'AI Generated Tip', text: tip })
-        .catch((error) => {
-          alert('Error sharing tip: ' + error);
-        });
-    } else {
+    if (!navigator.share || tip === defaultTip || tip === errorTip) {
       alert('Sharing not supported on this browser.');
+      return;
     }
+
+    navigator.share({ title: 'AI Generated Tip', text: tip }).catch((error) => {
+      alert('Error sharing tip: ' + error.message);
+    });
   }
 
   return (
@@ -98,7 +90,12 @@ export default function Home() {
             <LightbulbIcon className="me-2" />
             Daily Tips
           </a>
-          <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+          <button
+            className="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#mainNav"
+          >
             <span className="navbar-toggler-icon"></span>
           </button>
           <div className="collapse navbar-collapse justify-content-end" id="mainNav">
@@ -185,7 +182,11 @@ export default function Home() {
                       ))}
                     </select>
 
-                    <button className="btn btn-success btn-sm rounded-pill px-3" onClick={fetchTip} disabled={loading}>
+                    <button
+                      className="btn btn-success btn-sm rounded-pill px-3"
+                      onClick={fetchTip}
+                      disabled={loading}
+                    >
                       {loading ? '✨ Loading...' : 'Next Tip'}
                     </button>
 
@@ -242,49 +243,40 @@ export default function Home() {
           <div className="container">
             <h2 className="text-center text-success fw-bold mb-5">Why Use Daily Tips?</h2>
             <div className="row text-center g-4">
-              <div className="col-md-4">
-                <div style={{ height: '150px' }} className="svg-bounce">
-                  <svg width="100%" height="100%" viewBox="0 0 64 64" fill="none">
+              {/* 3 Icon Cards */}
+              {[
+                {
+                  title: 'Actionable Insights',
+                  desc: 'Get tips that inspire positive change and productivity.',
+                  icon: (
                     <circle cx="32" cy="32" r="30" fill="#E8F5E9" />
-                    <path d="M32 10a14 14 0 0 0-4 27.4V42a2 2 0 0 0 4 0v-4.6A14 14 0 0 0 32 10z" fill="#4CAF50" />
-                    <path d="M28 44h8v4a4 4 0 0 1-8 0v-4z" fill="#66BB6A" />
-                  </svg>
-                </div>
-                <h5 className="fw-bold mt-3">Actionable Insights</h5>
-                <p className="text-muted">Get tips that inspire positive change and productivity.</p>
-              </div>
-
-              <div className="col-md-4">
-                <div style={{ height: '150px' }} className="svg-pulse">
-                  <svg width="100%" height="100%" viewBox="0 0 64 64" fill="none">
+                  ),
+                },
+                {
+                  title: 'Powered by AI',
+                  desc: 'All tips are generated in real-time using GPT intelligence.',
+                  icon: (
                     <rect x="10" y="10" width="44" height="44" rx="6" fill="#F1F8E9" />
-                    <path
-                      d="M32 16a8 8 0 1 1-6.3 13.1L20 44h4l3-6h10l3 6h4l-5.7-14.9A8 8 0 0 1 32 16z"
-                      fill="#43A047"
-                    />
-                  </svg>
-                </div>
-                <h5 className="fw-bold mt-3">Powered by AI</h5>
-                <p className="text-muted">All tips are generated in real-time using GPT intelligence.</p>
-              </div>
-
-              <div className="col-md-4">
-                <div style={{ height: '150px' }} className="svg-rotate">
-                  <svg width="100%" height="100%" viewBox="0 0 64 64" fill="none">
+                  ),
+                },
+                {
+                  title: 'Fun & Simple',
+                  desc: 'Pick a category, click a button, and enjoy a new spark daily.',
+                  icon: (
                     <circle cx="32" cy="32" r="30" fill="#FFFDE7" />
-                    <path
-                      d="M20 30c0 6.6 5.4 12 12 12s12-5.4 12-12"
-                      stroke="#FBC02D"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    />
-                    <circle cx="24" cy="24" r="2" fill="#FBC02D" />
-                    <circle cx="40" cy="24" r="2" fill="#FBC02D" />
-                  </svg>
+                  ),
+                },
+              ].map((feature, idx) => (
+                <div className="col-md-4" key={idx}>
+                  <div style={{ height: '150px' }}>
+                    <svg width="100%" height="100%" viewBox="0 0 64 64" fill="none">
+                      {feature.icon}
+                    </svg>
+                  </div>
+                  <h5 className="fw-bold mt-3">{feature.title}</h5>
+                  <p className="text-muted">{feature.desc}</p>
                 </div>
-                <h5 className="fw-bold mt-3">Fun & Simple</h5>
-                <p className="text-muted">Pick a category, click a button, and enjoy a new spark daily.</p>
-              </div>
+              ))}
             </div>
           </div>
         </section>
