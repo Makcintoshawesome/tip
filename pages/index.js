@@ -1,3 +1,5 @@
+'use client'; // Optional in Next.js 13+ for safety in client components
+
 import { useEffect, useState } from 'react';
 
 export default function Home() {
@@ -5,7 +7,18 @@ export default function Home() {
   const [copySuccess, setCopySuccess] = useState(false);
   const [category, setCategory] = useState('general');
 
-  async function fetchTip() {
+  useEffect(() => {
+    // Only run in the browser
+    if (typeof window !== 'undefined') {
+      const stats = JSON.parse(localStorage.getItem('categoryStats') || '{}');
+      stats[category] = (stats[category] || 0) + 1;
+      localStorage.setItem('categoryStats', JSON.stringify(stats));
+
+      fetchTip();
+    }
+  }, [category]);
+
+  const fetchTip = async () => {
     try {
       const response = await fetch(`/api/tip?category=${category}`);
       const data = await response.json();
@@ -15,60 +28,49 @@ export default function Home() {
       console.error('Failed to fetch tip:', error);
       setTip('Error fetching tip. Please try again.');
     }
-  }
+  };
 
-  useEffect(() => {
-    // Prevent code from running during server-side rendering
-    if (typeof window === 'undefined') return;
-
-    const stats = JSON.parse(localStorage.getItem('categoryStats') || '{}');
-    stats[category] = (stats[category] || 0) + 1;
-    localStorage.setItem('categoryStats', JSON.stringify(stats));
-
-    fetchTip();
-  }, [category]);
-
-  function copyTip() {
-    if (typeof window === 'undefined') return;
-
-    if (
-      tip &&
-      tip !== 'Click "Next Tip" to get a tip!' &&
-      tip !== 'Error fetching tip. Please try again.'
-    ) {
-      navigator.clipboard.writeText(tip);
-      setCopySuccess(true);
+  const copyTip = () => {
+    if (typeof window !== 'undefined') {
+      if (
+        tip &&
+        tip !== 'Click "Next Tip" to get a tip!' &&
+        tip !== 'Error fetching tip. Please try again.'
+      ) {
+        navigator.clipboard.writeText(tip);
+        setCopySuccess(true);
+      }
     }
-  }
+  };
 
-  function shareTip() {
-    if (typeof window === 'undefined') return;
-
-    if (
-      navigator.share &&
-      tip &&
-      tip !== 'Click "Next Tip" to get a tip!' &&
-      tip !== 'Error fetching tip. Please try again.'
-    ) {
-      navigator
-        .share({
-          title: 'AI Generated Tip',
-          text: tip,
-        })
-        .catch((error) => {
-          alert('Error sharing tip: ' + error);
-        });
-    } else {
-      alert('Sharing not supported on this browser.');
+  const shareTip = () => {
+    if (typeof window !== 'undefined') {
+      if (
+        navigator.share &&
+        tip &&
+        tip !== 'Click "Next Tip" to get a tip!' &&
+        tip !== 'Error fetching tip. Please try again.'
+      ) {
+        navigator
+          .share({
+            title: 'AI Generated Tip',
+            text: tip,
+          })
+          .catch((error) => {
+            alert('Error sharing tip: ' + error);
+          });
+      } else {
+        alert('Sharing not supported on this browser.');
+      }
     }
-  }
+  };
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen px-4 text-center bg-gradient-to-br from-blue-100 to-blue-300">
       <h1 className="text-4xl font-bold mb-4">💡 AI Generated Tips</h1>
       <p className="text-xl max-w-xl mb-8">{tip}</p>
 
-      <div className="flex gap-4 mb-6">
+      <div className="flex flex-wrap justify-center gap-4 mb-6">
         <button
           onClick={fetchTip}
           className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
